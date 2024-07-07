@@ -2,7 +2,7 @@
 library(readstata13); library(MASS); library(flexsurv); library(simsurv)
 
 overwrite <- "TRUE"
-setwd("c:/")
+setwd("C:/Research/Cambridge/DES_simulation")
 source("./blooddonor_des.R")
 
 
@@ -12,7 +12,7 @@ source("./blooddonor_des.R")
 ###############
 
 ## Read-in covariate distribution
-covs<-read.dta13("./women/input/covs_women.dta")
+covs<-read.dta13("./women/input/covs_blups_women_v2.dta")
 agedist<-covs$age ## baseline age category from COMPARE
 exagedist<-covs$exactage ## baseline exact age from COMPARE
 hbdist<-covs$hb ## baseline hb from COMPARE

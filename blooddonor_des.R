@@ -5,14 +5,16 @@
 ## 3. calculate hb & p>thresh at each t, given covs (should this simulate from the distribution of BLUPS, given covs?)
 ## 4. for each policy: calculate recall time (given p-cut and recall min for optimal policy)
 ## 5. draw p(attend) and return delay time (can we build in association with hb (joint model)?)
-## 6. draw p(defer | under thresh) [for combined policy (predicted + haemocue for high risk) and status quo, draw p(defer | under thresh) (I think currently assuming all deferrals are under threshold)]
+## 6. draw p(defer | under thresh) [for combined policy (predicted + haemocue for high risk) 
+##and status quo, draw p(defer | under thresh) (I think currently assuming all deferrals are under threshold)]
 ## 7. record donation / deferral and bleed under threshold indicators at time t 
 ## 8. reset t=0 if donation 
 ## 9. re-run steps (3-8) if donation
 
 ## SET UP ##
 # default = current
-des<-function(N,params,agedist,exagedist,hbdist,ethdist,blooddist,prevdefdist,prevdondist,blupdist,blupsedist,recall,attend, 
+des<-function(N,params,agedist,exagedist,hbdist,ethdist,blooddist,prevdefdist,
+              prevdondist,blupdist,blupsedist,recall,attend, 
               fixedse0dist,
               fixedse1dist,
               fixedse2dist,
@@ -72,15 +74,18 @@ des<-function(N,params,agedist,exagedist,hbdist,ethdist,blooddist,prevdefdist,pr
   params[[i]]<-params[[i]][sort(names(params[[i]]))]
   }
   
-  ## check that length of agedist, sexdist and aaadiam are the same, or that the length is one (e.g everyone has the same age)
+  ## check that length of agedist, sexdist and aaadiam are the same, 
+  ##or that the length is one (e.g everyone has the same age)
   if(length(hbdist)!=length(agedist)){
     stop(paste0("Length of agedist, hbdist must be the same"))
   }
   
   allevents<-matrix(nrow=N,ncol=9) 
-  colnames(allevents)<-c("baseline","attend","test","recall","donate","defer lowhb","bleed under threshold","dropout","defer other")
+  colnames(allevents)<-c("baseline","attend","test","recall","donate","defer lowhb",
+                         "bleed under threshold","dropout","defer other")
   eventhistory<-data.frame(event=NULL,time=NULL)
-
+   
+  ##sample individuals from the dataset
   ind<-sample.int(length(agedist),size=N,replace = T)
   age<-agedist[ind]
   exage<-exagedist[ind]
@@ -146,7 +151,8 @@ des<-function(N,params,agedist,exagedist,hbdist,ethdist,blooddist,prevdefdist,pr
   fixedse51<-fixedse51dist[ind]
   fixedse52<-fixedse52dist[ind]
   
-  baseline.covariates<-as.matrix(data.frame(age=age,exage=exage,hb1=hb1,eth=eth,blood=blood,prevdef=prevdef,prevdon=prevdon,blup=blup,blupse=blupse,
+  baseline.covariates<-as.matrix(data.frame(age=age,exage=exage,hb1=hb1,eth=eth,
+                                            blood=blood,prevdef=prevdef,prevdon=prevdon,blup=blup,blupse=blupse,
                                             fixedse0=fixedse0,
                                             fixedse1=fixedse1,
                                             fixedse2=fixedse2,
@@ -202,7 +208,9 @@ des<-function(N,params,agedist,exagedist,hbdist,ethdist,blooddist,prevdefdist,pr
                                             fixedse52=fixedse52
                                             ))
   
-  result<-lapply(1:N,des.donor,params,baseline.covariates,recall,attend)
+  result<-lapply(1:N,des.donor,params,baseline.covariates,recall,attend) ##des.donor() function used here
+  ##pass params,baseline.covariates,recall,attend to des.donor function
+  ##recall=recall.curr (recall time); attend=attend.dist (time from recall to attendance)
   eventlist<-sapply(result,"[","eventlist")
   timelist<-sapply(result,"[","timelist")
   donornumlist<-sapply(result,"[","donornumlist")
@@ -215,7 +223,9 @@ des<-function(N,params,agedist,exagedist,hbdist,ethdist,blooddist,prevdefdist,pr
   hblist<-sapply(result,"[","hblist")
   hbcurrlist<-sapply(result,"[","hbcurrlist")
   eventhistory<-data.frame(donornum=unlist(donornumlist), event=unlist(eventlist),time=unlist(timelist),
-                           hb1=unlist(hblist),age=unlist(agelist),exage=unlist(exagelist),blood=unlist(bloodlist),eth=unlist(ethlist),prevdef=unlist(prevdeflist),prevdon=unlist(prevdonlist),hbcurr=unlist(hbcurrlist))
+                           hb1=unlist(hblist),age=unlist(agelist),exage=unlist(exagelist),
+                           blood=unlist(bloodlist),eth=unlist(ethlist),prevdef=unlist(prevdeflist),
+                           prevdon=unlist(prevdonlist),hbcurr=unlist(hbcurrlist))
   
   allevents<-t(sapply(eventlist,function(x){table(factor(x,levels=colnames(allevents)))}))
   eventhistory$event<-factor(eventhistory$event,levels=colnames(allevents))
@@ -224,6 +234,7 @@ des<-function(N,params,agedist,exagedist,hbdist,ethdist,blooddist,prevdefdist,pr
   
 }
 
+##flag: end of the des() function
 
 ## INDIVIDUAL SIMULATION ##
 
@@ -327,6 +338,9 @@ des.donor<-function(i,params,baseline.covariates,recall,attend){
   fixedse51.i<-covariates.i["fixedse51"]
   fixedse52.i<-covariates.i["fixedse52"]
   
+  
+  ##categorize the covariates
+  ##age
   age0<-0
   age1<-0
   age2<-0
@@ -352,7 +366,7 @@ des.donor<-function(i,params,baseline.covariates,recall,attend){
   if(exagei>=65){
     age5<-1
   }
-
+  ##blood type
   blood1<-0
   blood2<-0
   blood3<-0
@@ -387,7 +401,7 @@ des.donor<-function(i,params,baseline.covariates,recall,attend){
     blood8<-1
   }
   
-  
+  ##low deferral
   nlow1<-0
   nlow2<-0
   nlow3<-0
@@ -401,7 +415,7 @@ des.donor<-function(i,params,baseline.covariates,recall,attend){
   if(prevdefi==2){
     nlow3<-1
   }
-  
+  ##number of previous donations
   ndon1<-0
   ndon2<-0
   ndon3<-0
@@ -415,10 +429,13 @@ des.donor<-function(i,params,baseline.covariates,recall,attend){
   if(prevdoni==2){
     ndon3<-1
   }
-  
+  ##ethnicity
   eth1<-ethi
   
-  covi<-data.frame(eth1,age0,age1,age2,age3,age4,age5,blood1,blood2,blood3,blood4,blood5,blood6,blood7,blood8,nlow1,nlow2,nlow3,ndon1,ndon2,ndon3)
+  ##design matrix
+  covi<-data.frame(eth1,age0,age1,age2,age3,age4,age5,
+                   blood1,blood2,blood3,blood4,blood5,blood6,blood7,blood8,
+                   nlow1,nlow2,nlow3,ndon1,ndon2,ndon3)
   
 ## 3. calculate hb and p>thresh at each t, given covs
   hb.last<-hb1i
@@ -428,7 +445,12 @@ des.donor<-function(i,params,baseline.covariates,recall,attend){
   result<-data.frame(matrix(nrow=52,ncol=3))
   colnames(result)<-c("t", "hb", "prob")
   for(t in 1:52) {
-  hb.time<-(params$hb["cons"])+(params$hb["visit.coef"])+((params$hb["rettime.coef"])*t)+((params$hb["age1.coef"])*age1)+((params$hb["age2.coef"])*age2)+((params$hb["age3.coef"])*age3)+((params$hb["age4.coef"])*age4)+((params$hb["age5.coef"])*age5)+((params$hb["eth.coef"])*ethi)+((params$hb["blood2.coef"])*blood2)+((params$hb["blood3.coef"])*blood3)+((params$hb["blood4.coef"])*blood4)+((params$hb["blood5.coef"])*blood5)+((params$hb["blood6.coef"])*blood6)+((params$hb["blood7.coef"])*blood7)+((params$hb["blood8.coef"])*blood8)+blupi
+  hb.time<-(params$hb["cons"])+(params$hb["visit.coef"])+((params$hb["rettime.coef"])*t)+
+    ((params$hb["age1.coef"])*age1)+((params$hb["age2.coef"])*age2)+((params$hb["age3.coef"])*age3)+
+    ((params$hb["age4.coef"])*age4)+((params$hb["age5.coef"])*age5)+
+    ((params$hb["eth.coef"])*ethi)+((params$hb["blood2.coef"])*blood2)+((params$hb["blood3.coef"])*blood3)+
+    ((params$hb["blood4.coef"])*blood4)+((params$hb["blood5.coef"])*blood5)+
+    ((params$hb["blood6.coef"])*blood6)+((params$hb["blood7.coef"])*blood7)+((params$hb["blood8.coef"])*blood8)+blupi
   fixedse.t.nam <- paste("fixedse", t, ".i", sep = "")
   fixedse.t<-get(fixedse.t.nam)
   allse.t<-fixedse.t+blupsei
@@ -439,7 +461,8 @@ des.donor<-function(i,params,baseline.covariates,recall,attend){
   }
   
   if(params$strategy["indemand"]==0){
-    ## WHAT HAPPENS IF IN 52W PROB NEVER REACHES PROB.THRESH? x is not being calulated, but is still x=params$othdef (being used elsewhere)
+    ## WHAT HAPPENS IF IN 52W PROB NEVER REACHES PROB.THRESH? x is not being calulated, 
+    ##but is still x=params$othdef (being used elsewhere)
   x<-result$t[result$prob>params$strategy["prob.thresh"]]
   y<-min(x)
   z<-max(params$strategy["min.recall"],y)
@@ -501,7 +524,12 @@ des.donor<-function(i,params,baseline.covariates,recall,attend){
   donornumlist[j]<-i
   # modelled hb after initial donation (ie not p>thresh)
     # fixed part
-    hb.curr.fixed<-(params$hb["cons"])+(params$hb["visit.coef"])+((params$hb["rettime.coef"])*0.01)+((params$hb["age1.coef"])*age1)+((params$hb["age2.coef"])*age2)+((params$hb["age3.coef"])*age3)+((params$hb["age4.coef"])*age4)+((params$hb["age5.coef"])*age5)+((params$hb["eth.coef"])*ethi)+((params$hb["blood2.coef"])*blood2)+((params$hb["blood3.coef"])*blood3)+((params$hb["blood4.coef"])*blood4)+((params$hb["blood5.coef"])*blood5)+((params$hb["blood6.coef"])*blood6)+((params$hb["blood7.coef"])*blood7)+((params$hb["blood8.coef"])*blood8)
+    hb.curr.fixed<-(params$hb["cons"])+(params$hb["visit.coef"])+((params$hb["rettime.coef"])*0.01)+
+      ((params$hb["age1.coef"])*age1)+((params$hb["age2.coef"])*age2)+((params$hb["age3.coef"])*age3)+
+      ((params$hb["age4.coef"])*age4)+((params$hb["age5.coef"])*age5)+((params$hb["eth.coef"])*ethi)+
+      ((params$hb["blood2.coef"])*blood2)+((params$hb["blood3.coef"])*blood3)+((params$hb["blood4.coef"])*blood4)+
+      ((params$hb["blood5.coef"])*blood5)+((params$hb["blood6.coef"])*blood6)+((params$hb["blood7.coef"])*blood7)+
+      ((params$hb["blood8.coef"])*blood8)
     # uncertainty about fixed part: draw from z = #SEs from mean
     hb.curr.draw<-mvrnorm(1,0,1)
     # fixed mean + (z*SE = value +/- from fixed mean), then add blup
@@ -595,9 +623,11 @@ repeat {
   lookup3<-merge(lookup2,eth.d)
   blood.d<-as.data.frame(bloodi)
   lookup4<-merge(lookup3,blood.d)
-  newblupi<-lookup4$blup[lookup4$hb>(lookup4$hb.last.r-0.02) & lookup4$hb<(lookup4$hb.last.r+0.02) & lookup4$age==lookup4$agecat & lookup4$eth==lookup4$ethi & lookup4$blood==lookup4$bloodi]
+  newblupi<-lookup4$blup[lookup4$hb>(lookup4$hb.last.r-0.02) & lookup4$hb<(lookup4$hb.last.r+0.02) & 
+                           lookup4$age==lookup4$agecat & lookup4$eth==lookup4$ethi & lookup4$blood==lookup4$bloodi]
   # noting all blupses are the same, so do not need to re-lookup
-  #newblupse<-lookup2$blupse[lookup2$hb>(lookup2$hb.last.r-0.02) & lookup2$hb<(lookup2$hb.last.r+0.02) & lookup2$age==lookup2$agecat]
+  #newblupse<-lookup2$blupse[lookup2$hb>(lookup2$hb.last.r-0.02) & lookup2$hb<(lookup2$hb.last.r+0.02) & 
+  #lookup2$age==lookup2$agecat]
   # retaining diff from mean from original draw: blupdraw<-newblup+blupdiff, and applying to new mean 
   # otherwise use newblup (instead of blupdraw) in calc of hb.curr to just fit mean values
   # retain original blupdraw following inital donation
@@ -607,7 +637,12 @@ repeat {
   
   # calculate current/post-donation hb
   # using newblupi after 2nd donation
-  hb.curr.fixed<-(params$hb["cons"])+(params$hb["visit.coef"])+((params$hb["rettime.coef"])*timesince.donation)+((params$hb["age1.coef"])*age1)+((params$hb["age2.coef"])*age2)+((params$hb["age3.coef"])*age3)+((params$hb["age4.coef"])*age4)+((params$hb["age5.coef"])*age5)+((params$hb["eth.coef"])*ethi)+((params$hb["blood2.coef"])*blood2)+((params$hb["blood3.coef"])*blood3)+((params$hb["blood4.coef"])*blood4)+((params$hb["blood5.coef"])*blood5)+((params$hb["blood6.coef"])*blood6)+((params$hb["blood7.coef"])*blood7)+((params$hb["blood8.coef"])*blood8)
+  hb.curr.fixed<-(params$hb["cons"])+(params$hb["visit.coef"])+((params$hb["rettime.coef"])*timesince.donation)+
+    ((params$hb["age1.coef"])*age1)+((params$hb["age2.coef"])*age2)+((params$hb["age3.coef"])*age3)+
+    ((params$hb["age4.coef"])*age4)+((params$hb["age5.coef"])*age5)+((params$hb["eth.coef"])*ethi)+
+    ((params$hb["blood2.coef"])*blood2)+((params$hb["blood3.coef"])*blood3)+((params$hb["blood4.coef"])*blood4)+
+    ((params$hb["blood5.coef"])*blood5)+((params$hb["blood6.coef"])*blood6)+((params$hb["blood7.coef"])*blood7)+
+    ((params$hb["blood8.coef"])*blood8)
   timesince.donation.r<-round(timesince.donation,digits=0)
   
   # exiting follow-up if it has been >1y since last donation
@@ -739,7 +774,12 @@ repeat {
   result<-data.frame(matrix(nrow=52,ncol=3))
   colnames(result)<-c("t", "hb", "prob")
   for(t in 1:52) {
-    hb.time<-(params$hb["cons"])+(params$hb["visit.coef"])+((params$hb["rettime.coef"])*t)+((params$hb["age1.coef"])*age1)+((params$hb["age2.coef"])*age2)+((params$hb["age3.coef"])*age3)+((params$hb["age4.coef"])*age4)+((params$hb["age5.coef"])*age5)+((params$hb["eth.coef"])*ethi)+((params$hb["blood2.coef"])*blood2)+((params$hb["blood3.coef"])*blood3)+((params$hb["blood4.coef"])*blood4)+((params$hb["blood5.coef"])*blood5)+((params$hb["blood6.coef"])*blood6)+((params$hb["blood7.coef"])*blood7)+((params$hb["blood8.coef"])*blood8)+blupi
+    hb.time<-(params$hb["cons"])+(params$hb["visit.coef"])+((params$hb["rettime.coef"])*t)+
+      ((params$hb["age1.coef"])*age1)+((params$hb["age2.coef"])*age2)+((params$hb["age3.coef"])*age3)+
+      ((params$hb["age4.coef"])*age4)+((params$hb["age5.coef"])*age5)+((params$hb["eth.coef"])*ethi)+
+      ((params$hb["blood2.coef"])*blood2)+((params$hb["blood3.coef"])*blood3)+((params$hb["blood4.coef"])*blood4)+
+      ((params$hb["blood5.coef"])*blood5)+((params$hb["blood6.coef"])*blood6)+((params$hb["blood7.coef"])*blood7)+
+      ((params$hb["blood8.coef"])*blood8)+blupi
     fixedse.t.nam <- paste("fixedse", t, ".i", sep = "")
     fixedse.t<-get(fixedse.t.nam)
     allse.t<-fixedse.t+blupsei
@@ -811,9 +851,12 @@ repeat {
 }
 
 
-return(list(donornumlist=donornumlist,eventlist=eventlist,timelist=timelist,currenttime=currenttime, agelist=agelist, exagelist=exagelist,hblist=hblist, ethlist=ethlist,bloodlist=bloodlist,prevdeflist=prevdeflist,prevdonlist=prevdonlist,hbcurrlist=hbcurrlist))
+return(list(donornumlist=donornumlist,eventlist=eventlist,timelist=timelist,
+            currenttime=currenttime, agelist=agelist, exagelist=exagelist,hblist=hblist, 
+            ethlist=ethlist,bloodlist=bloodlist,prevdeflist=prevdeflist,prevdonlist=prevdonlist,hbcurrlist=hbcurrlist))
 }
 
+##Flag: end of the des.donor() function.
 
 ### FUNCTIONS ###
 # time of next recall: fixed 16w recall (current)
@@ -855,6 +898,7 @@ attend.dist<-function(currenttime,eventlist,timelist,covi,fpmod,logcumhaz){
   }, error=function(e) 0)
 
   attenddelay<-tryCatch({
+    
     ((attenddelay$eventtime/24)/7)
   }, error=function(e) 0)
   
@@ -867,7 +911,9 @@ attend.dist<-function(currenttime,eventlist,timelist,covi,fpmod,logcumhaz){
 
 # PSA
 ### Probabilistic sensitivity analysis wrapper function
-psa.des<-function(B, N, params.b, params.v, agedist, exagedist, hbdist, ethdist, blooddist, prevdefdist, prevdondist, blupdist, blupsedist, recall, attend,
+psa.des<-function(B, N, params.b, params.v, agedist, exagedist, hbdist, 
+                  ethdist, blooddist, prevdefdist, prevdondist, blupdist, 
+                  blupsedist, recall, attend,
                   fixedse0dist,
                   fixedse1dist,
                   fixedse2dist,
@@ -965,7 +1011,10 @@ psa.des<-function(B, N, params.b, params.v, agedist, exagedist, hbdist, ethdist,
     
     
     ## Run DES model
-    des.output<-model.hb<-des(N=N, params=pars, agedist=agedist, exagedist=exagedist, hbdist=hbdist, ethdist=ethdist, blooddist=blooddist, prevdefdist=prevdefdist, prevdondist=prevdondist, blupdist=blupdist, blupsedist=blupsedist, recall, attend=attend.dist,
+    des.output<-model.hb<-des(N=N, params=pars, agedist=agedist, 
+                              exagedist=exagedist, hbdist=hbdist, ethdist=ethdist, 
+                              blooddist=blooddist, prevdefdist=prevdefdist, prevdondist=prevdondist, 
+                              blupdist=blupdist, blupsedist=blupsedist, recall, attend=attend.dist,
                               fixedse0dist=fixedse0dist,
                               fixedse1dist=fixedse1dist,
                               fixedse2dist=fixedse2dist,
@@ -1032,7 +1081,10 @@ psa.des<-function(B, N, params.b, params.v, agedist, exagedist, hbdist, ethdist,
   testsum<-sum(model.hb$eventhistory["event"]=="test")
   donatesum<-sum(model.hb$eventhistory["event"]=="donate")
   undersum<-sum(model.hb$eventhistory["event"]=="bleed under threshold")
-  raresum<-sum(model.hb$eventhistory["event"]=="donate" & model.hb$eventhistory["blood"]==4)+sum(model.hb$eventhistory["event"]=="donate" & model.hb$eventhistory["blood"]==6)+sum(model.hb$eventhistory["event"]=="bleed under threshold" & model.hb$eventhistory["blood"]==4)+sum(model.hb$eventhistory["event"]=="bleed under threshold" & model.hb$eventhistory["blood"]==6)
+  raresum<-sum(model.hb$eventhistory["event"]=="donate" & model.hb$eventhistory["blood"]==4)+
+    sum(model.hb$eventhistory["event"]=="donate" & model.hb$eventhistory["blood"]==6)+
+    sum(model.hb$eventhistory["event"]=="bleed under threshold" & model.hb$eventhistory["blood"]==4)+
+    sum(model.hb$eventhistory["event"]=="bleed under threshold" & model.hb$eventhistory["blood"]==6)
   deferlowsum<-sum(model.hb$eventhistory["event"]=="defer lowhb")
   deferothsum<-sum(model.hb$eventhistory["event"]=="defer other")
   
@@ -1044,7 +1096,8 @@ psa.des<-function(B, N, params.b, params.v, agedist, exagedist, hbdist, ethdist,
   psasummary<-rbind(psasummary,temp)
   }
   
-  ## Saving individual event histories, by bs sample  (if using, needs also to add psaeventhistory=psaeventhistory to return command in line #1057)
+  ## Saving individual event histories, by bs sample  
+  ##(if using, needs also to add psaeventhistory=psaeventhistory to return command in line #1057)
   #if(b==1){
   #  psaeventhistory<-cbind(b,model.hb$eventhistory)
   #}
@@ -1055,5 +1108,6 @@ psa.des<-function(B, N, params.b, params.v, agedist, exagedist, hbdist, ethdist,
     
   }
   
-  return(list(params=pars,output=output, psahb=psahb, psadropout=psadropout, psadefer=psadefer, psaothdefer=psaothdefer, psasummary=psasummary))
+  return(list(params=pars,output=output, psahb=psahb, psadropout=psadropout, 
+              psadefer=psadefer, psaothdefer=psaothdefer, psasummary=psasummary))
 }

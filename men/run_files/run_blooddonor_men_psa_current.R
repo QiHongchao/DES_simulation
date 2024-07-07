@@ -1,7 +1,7 @@
 library(readstata13); library(MASS); library(flexsurv); library(simsurv)
 
 overwrite <- "TRUE"
-setwd("c:/")
+setwd("C:/Research/Cambridge/DES_simulation")
 source("./blooddonor_des.R")
 
 psa<-"TRUE"
@@ -12,7 +12,7 @@ source("./men/input/blooddonor_params_men_current.R")
 #############
 
 ## Read-in covariate distribution
-covs<-read.dta13("./men/input/covs_men.dta")
+covs<-read.dta13("./men/input/covs_men_sample.dta")
 agedist<-covs$age ## baseline age category from COMPARE
 exagedist<-covs$exactage ## baseline exact age from COMPARE
 hbdist<-covs$hb ## baseline hb from COMPARE
@@ -75,11 +75,11 @@ fixedse49dist<-covs$fixedse49
 fixedse50dist<-covs$fixedse50
 fixedse51dist<-covs$fixedse51
 fixedse52dist<-covs$fixedse52
-blups<-read.dta13("./men/input/blups_men.dta")
+blups<-read.dta13("./men/input/blups_men_sample.dta")
 
 ## fitting flexible parametric model to observed data; used to inform simulated time to return 
 ## importing stata data
-stpmmen<-read.dta13("./men/input/stpm_men.dta")
+stpmmen<-read.dta13("./men/input/stpm_men_sample.dta")
 stpmmen$newdiffv_mins<-stpmmen$newdiffv_hours*60
 
 # Define a function returning the log cum hazard at time t: used to inform simulated time to return

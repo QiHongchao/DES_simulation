@@ -1,7 +1,7 @@
 library(readstata13); library(MASS); library(flexsurv); library(simsurv)
 
 overwrite <- "TRUE"
-setwd("c:/")
+setwd('C:/Research/Cambridge/DES_simulation')
 source("./blooddonor_des.R")
 
 
@@ -10,7 +10,8 @@ source("./blooddonor_des.R")
 #############
 
 ## Read-in covariate distribution
-covs<-read.dta13("./men/input/covs_men.dta")
+covs<-read.dta13("./men/input/covs_blups_men_v2.dta")
+{
 agedist<-covs$age ## baseline age category from COMPARE
 exagedist<-covs$exactage ## baseline exact age from COMPARE
 hbdist<-covs$hb ## baseline hb from COMPARE
@@ -73,7 +74,8 @@ fixedse49dist<-covs$fixedse49
 fixedse50dist<-covs$fixedse50
 fixedse51dist<-covs$fixedse51
 fixedse52dist<-covs$fixedse52
-blups<-read.dta13("./men/input/blups_men.dta")
+}
+blups<-read.dta13("./men/input/blups_only_men_v2.dta")
 
 ## fitting flexible parametric model to observed data; used to inform simulated time to return 
 ## importing stata data
@@ -112,12 +114,11 @@ logcumhaz <- function(t, x, betas, knots) {
 # gamma0 = cons
 # gamma1 = shape
 # gamma2, etc = additional cubic spline params
-
+##time scale: hours
 fpmod <- flexsurv::flexsurvspline(Surv(newdiffv_hours, return) ~ eth1+
                                        age1+age2+age3+age4+age5+
                                        blood2+blood3+blood4+blood5+blood6+blood7+blood8+
-                                       nlow2+nlow3+
-                                       ndon2+ndon3, 
+                                       nlow2+nlow3+ndon2+ndon3, 
                                      data = stpmmen, k = 2)
 
 
@@ -149,15 +150,25 @@ fpmod <- flexsurv::flexsurvspline(Surv(newdiffv_hours, return) ~ eth1+
 ## NOTE: with 12 week minimum recall
 
 set.seed(9049)
-params=list("hb"=c(visit.coef=-0.4092, rettime.coef=0.0038, age1.coef=-0.0396, age2.coef=-0.1823, age3.coef=-0.2209, age4.coef=-0.3627, age5.coef=-0.4945, eth.coef=-0.3791, blood2.coef=0.0278, blood3.coef=0.1211, blood4.coef=0.1500, blood5.coef=0.0815, blood6.coef=0.1277, blood7.coef=0.0946, blood8.coef=0.0866, cons=15.2794), ## hb recovery
+params=list("hb"=c(visit.coef=-0.4092, rettime.coef=0.0038, age1.coef=-0.0396, 
+                   age2.coef=-0.1823, age3.coef=-0.2209, age4.coef=-0.3627, age5.coef=-0.4945, 
+                   eth.coef=-0.3791, blood2.coef=0.0278, blood3.coef=0.1211, blood4.coef=0.1500, 
+                   blood5.coef=0.0815, blood6.coef=0.1277, blood7.coef=0.0946, blood8.coef=0.0866, 
+                   cons=15.2794), ## hb recovery
             "dropout"=c(cons=-2.6449),
             "defer"=c(cons=-0.9027, hb1.coef=0, hb2.coef=0, hb3.coef=0),
             "othdefer"=c(cons=-3.1916), 
-            "strategy"=c(current=1, optimal=0, atrisk=0, indemand=0, atrisk.thresh=0.9, indemand.thresh=0.7, lowhbdef.recall=12, vlowhbdef.recall=52, othdef.recall=4, prob.thresh=0.9, min.recall=12, curr.recall=12, length=52, thresh=13.5, hb.min=8.6, hb.max=21.1) # hb.min/max from BLUPS file
+            "strategy"=c(current=1, optimal=0, atrisk=0, indemand=0, atrisk.thresh=0.9, 
+                         indemand.thresh=0.7, lowhbdef.recall=12, vlowhbdef.recall=52, 
+                         othdef.recall=4, prob.thresh=0.9, min.recall=12, curr.recall=12, 
+                         length=52, thresh=13.5, hb.min=8.6, hb.max=21.1) # hb.min/max from BLUPS file
 )
 
-
-model.hb<-des(N=10000, params=params, agedist=agedist, exagedist=exagedist, hbdist=hbdist, ethdist=ethdist, blooddist=blooddist, prevdefdist=prevdefdist, prevdondist=prevdondist, blupdist=blupdist, blupsedist=blupsedist, recall=recall.curr, attend=attend.dist,
+##N: number of subjects sampled
+model.hb<-des(N=100, params=params, agedist=agedist, exagedist=exagedist, 
+              hbdist=hbdist, ethdist=ethdist, blooddist=blooddist, prevdefdist=prevdefdist, 
+              prevdondist=prevdondist, blupdist=blupdist, blupsedist=blupsedist, 
+              recall=recall.curr, attend=attend.dist,
               fixedse0dist=fixedse0dist,
               fixedse1dist=fixedse1dist,
               fixedse2dist=fixedse2dist,
